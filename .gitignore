@@ -1,3 +1,6 @@
+debugconfig.ini
+Misc/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
