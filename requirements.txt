@@ -1,2 +1,5 @@
 python-osc==1.9.3
 websockets==15.0.1
+PyQt5==5.15.11
+pyqt5_sip==12.17.1
+qasync==0.28.0
