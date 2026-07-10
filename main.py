@@ -80,7 +80,8 @@ async def run_sync():
             print(f"Server started on port {config.WS_PORT} (host mode — forward this port)")
             await asyncio.Future()
     else:
-        asyncio.create_task(sync.connect_to_friend_retry())
+        global retry_task
+        retry_task = asyncio.create_task(sync.connect_to_friend_retry())
         await asyncio.Future()
 
 
@@ -89,13 +90,13 @@ def main():
     loop = qasync.QEventLoop(app)
     asyncio.set_event_loop(loop)
 
-    global sync, window
+    global sync, window, main_task
     sync = VRCParamController()
     window = MainWindow(sync)
     window.show()
 
     with loop:
-        loop.create_task(run_sync())
+        main_task = loop.create_task(run_sync())
         loop.run_forever()
 
 

@@ -38,7 +38,7 @@ class Config:
 
         self.COOLDOWN = float(settings["cooldown"])
         self.WS_PORT = int(settings["ws_port"])
-        self.URL = f'ws://{settings["friend_ip"]}:{self.WS_PORT}'
+        self.URI = f'ws://{settings["friend_ip"]}:{self.WS_PORT}'
         self.SECRET_PASSWORD = settings["secretpassword"]
 
         self.PRINT_LOG = settings.getboolean("printlog")

@@ -5,7 +5,7 @@ import platform
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QPushButton, QCheckBox, QSlider, QDoubleSpinBox, 
-                             QLabel, QHBoxLayout, QScrollArea, QSpinBox, QTabWidget)
+                             QLabel, QHBoxLayout, QScrollArea, QSpinBox, QTabWidget, QSizePolicy)
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from pythonosc import dispatcher, osc_server, udp_client
 import qasync
@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
         self.resize(400, 1000)
 
         self.param_widgets = {}
+        self.trashed_widgets = {}
 
         # Create the tabs
         tabs = QTabWidget()
@@ -49,7 +50,19 @@ class MainWindow(QMainWindow):
 
         parameters_layout.addWidget(scroll)
 
+        # --------------------
+        # Trashed Params tab
+        # --------------------
+        trash_tab = QWidget()
+        trash_layout = QVBoxLayout(trash_tab)
 
+        scrolltrash = QScrollArea()
+        scrolltrash.setWidgetResizable(True)
+        scrolltrassh_content = QWidget()
+        self.trash_layout = QVBoxLayout(scrolltrassh_content)
+        scrolltrash.setWidget(scrolltrassh_content)
+        trash_layout.addWidget(scrolltrash)
+        self.trash_layout.addStretch()
         # --------------------
         # Settings tab
         # --------------------
@@ -74,10 +87,10 @@ class MainWindow(QMainWindow):
         # --------------------
         # Add tabs
         tabs.addTab(parameters_tab, "Parameters")
+        tabs.addTab(trash_tab, "Trashed")     
         tabs.addTab(blacklist_tab, "Blacklist")
         tabs.addTab(settings_tab, "Settings")
         tabs.addTab(logs_tab, "Logs")     
-
 
         # --------------------
         # opening message
@@ -88,7 +101,14 @@ class MainWindow(QMainWindow):
         self.empty_label.setAlignment(Qt.AlignCenter)
         self.empty_label.setStyleSheet("font-size: 18px;")
         self.params_layout.addWidget(self.empty_label)
+        self.params_layout.addStretch()
 
+
+        #self.setStyleSheet("""
+        #    QLabel { font-size: 13px; }
+        #    QPushButton { border-radius: 4px; padding: 4px; }
+        #    QScrollArea { border: none; }
+        #""")
 
     def create_parameter_widget(self, param_name: str, param_type: str):
         """Create appropriate widget based on parameter type"""
@@ -100,7 +120,7 @@ class MainWindow(QMainWindow):
         label = QLabel(f"{param_name}:")
         label.setMinimumWidth(120)
         layout.addWidget(label)
-        
+
         # Create appropriate widget based on type
         if param_type == 'Bool':
             widget_group = self.create_bool_widgets(param_name)
@@ -115,42 +135,80 @@ class MainWindow(QMainWindow):
             layout.addWidget(QLabel(f"Unknown type: {param_type}"))
         
         
-        # Add to layout and store reference
-        self.params_layout.addWidget(container)
-
-
-
         #-------------
         #Trash button
         #-------------
         # Add stretch so trash button stays on the right
-        layout.addStretch(5)
+        layout.addStretch()
 
         # Trash button
         delete_button = QPushButton("🗑")
         delete_button.setFixedWidth(35)
 
         delete_button.clicked.connect(
-            lambda: self.remove_parameter_widget(param_name, container)
+            lambda: self.trash_clicked(param_name, param_type, container)
         )
 
         layout.addWidget(delete_button)
 
         # Add to layout
-        self.params_layout.addWidget(container)
+        #self.params_layout.addWidget(container)
+        self.params_layout.insertWidget(self.params_layout.count() - 1, container)
    
-    def remove_parameter_widget(self, param_name, widget):
+    def trash_clicked(self, param_name, param_type, widget):
         print(f"Removing {param_name}")
 
         # Remove from layout
         self.params_layout.removeWidget(widget)
 
-        # Delete widget
-        widget.deleteLater()
+        widget.setParent(None)
+        old_layout = widget.layout()
+        old_button = old_layout.itemAt(old_layout.count() - 1).widget()
+        old_layout.removeWidget(old_button)
+        old_button.deleteLater()
 
-        # Remove stored references
+        restore_button = QPushButton("♻")
+        restore_button.setFixedWidth(35)
+        restore_button.clicked.connect(
+            lambda: self.restore_clicked(param_name, param_type, widget)
+        )
+        old_layout.addWidget(restore_button)
+
+        # Move it into the trash tab's layout
+        #self.trash_layout.addWidget(widget)
+        self.trash_layout.insertWidget(self.trash_layout.count() - 1, widget)
+
+        # Track it as trashed instead of just deleting the reference
         if param_name in self.param_widgets:
             del self.param_widgets[param_name]
+        self.trashed_widgets[param_name] = widget
+
+
+    def restore_clicked(self, param_name, param_type, widget):
+        #TODO this actually crashes if you try to use it after restoring. please fix.
+        print(f"Restoring {param_name}")
+
+        self.trash_layout.removeWidget(widget)
+        widget.setParent(None)
+
+        # Swap the restore button back for a trash button
+        old_layout = widget.layout()
+        old_button = old_layout.itemAt(old_layout.count() - 1).widget()
+        old_layout.removeWidget(old_button)
+        old_button.deleteLater()
+
+        delete_button = QPushButton("🗑")
+        delete_button.setFixedWidth(35)
+        delete_button.clicked.connect(
+            lambda: self.trash_clicked(param_name, param_type, widget)
+        )
+        old_layout.addWidget(delete_button)
+
+        #self.params_layout.addWidget(widget)
+        self.params_layout.insertWidget(self.params_layout.count() - 1, widget)
+        
+        del self.trashed_widgets[param_name]
+        self.param_widgets[param_name] = widget
         
     def create_bool_widgets(self, param_name: str):
         """Create button and checkbox for boolean parameters"""
@@ -211,7 +269,7 @@ class MainWindow(QMainWindow):
         # Integer spinbox
         spinbox = QSpinBox()
         spinbox.setMinimum(0)
-        spinbox.setMaximum(100)
+        spinbox.setMaximum(255)
         spinbox.setValue(0)
         
         # Connect them together
@@ -350,3 +408,4 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()
         
         #print(f"[DEBUG] Widget count after clear: {self.params_layout.count()}")
+        self.params_layout.addStretch()
