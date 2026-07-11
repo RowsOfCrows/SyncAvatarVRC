@@ -3,17 +3,15 @@
 A desktop application for viewing, editing, and syncing VRChat avatar parameters.
 
 ## Features
-```
+
 - View all editable avatar parameters in one interface.
 - Modify parameters without opening the in-game Expressions menu.
 - Optionally sync selected parameters with multiple friends in real time.
 - Simple graphical interface with no command-line setup required.
-```
 
-## Showcase
+you can use it local only or to sync with friends as well!
 
-![](https://github.com/RowsOfCrows/SyncAvatarVRC/blob/main/showcase/SyncAvatar_localonly_demo.gif)
-![](https://github.com/RowsOfCrows/SyncAvatarVRC/blob/main/showcase/SyncAvatar_remote_demo.gif)
+<img src="https://github.com/RowsOfCrows/SyncAvatarVRC/blob/main/showcase/SyncAvatar_localonly_demo.gif" width = 40%> <img src="https://github.com/RowsOfCrows/SyncAvatarVRC/blob/main/showcase/SyncAvatar_remote_demo.gif" width = 40%> 
 
 ## Download
 
